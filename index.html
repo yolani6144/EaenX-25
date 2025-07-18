@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EarnX Bot - Nobin Edition</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Telegram Mini App JS -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --primary: #4f8cff;
+      --secondary: #fff;
+      --bg: #f6f8fb;
+      --text: #222;
+      --muted: #888;
+      --accent: #ff8c00;
+      --card: #fff;
+      --card-shadow: 0 4px 24px 0 rgba(79,140,255,0.08);
+      --gradient: linear-gradient(90deg, #4f8cff 0%, #ff6bcb 100%);
+      --gradient2: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+      --gradient3: linear-gradient(90deg, #fa709a 0%, #fee140 100%);
+    }
+    body {
+      margin: 0; padding: 0; background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', 'Roboto', sans-serif;
+      display: flex; justify-content: center; align-items: center; min-height: 100vh;
+    }
+    .container {
+      width: 100%; max-width: 420px; background: var(--bg);
+      border-radius: 22px; box-shadow: 0 8px 32px 0 rgba(79,140,255,0.10);
+      overflow: hidden; min-height: 650px;
+      display: flex; flex-direction: column;
+      border: 1.5px solid #e3e8f0;
+    }
+    main { flex: 1; padding: 22px; padding-bottom: 90px; }
+    .view { display: none; }
+    .view.active { display: block; animation: fadeIn 0.4s; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .notice-bar {
+      background: linear-gradient(90deg, #ff6bcb 0%, #4f8cff 100%);
+      color: #fff;
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 16px;
+      font-size: 15px;
+      font-weight: 600;
+      box-shadow: 0 2px 8px #4f8cff22;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .notice-bar i { font-size: 18px; }
+    .user-header-card {
+      background: var(--card); border-radius: 18px; padding: 18px; margin-bottom: 22px;
+      display: flex; align-items: center; box-shadow: var(--card-shadow);
+    }
+    .user-avatar {
+      width: 54px; height: 54px; border-radius: 50%; margin-right: 16px;
+      background: var(--gradient); color: #fff;
+      display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 26px;
+      box-shadow: 0 2px 8px #4f8cff33;
+    }
+    .user-info .username { font-size: 19px; font-weight: 700; }
+    .user-info .title { font-size: 14px; color: #888; }
+    .balance-card {
+      background: var(--gradient2);
+      border-radius: 18px; padding: 22px; text-align: center; margin-bottom: 22px;
+      box-shadow: 0 2px 12px #43e97b22;
+      color: #222;
+    }
+    .balance-card .label { font-size: 15px; opacity: 0.8; }
+    .balance-card .balance-value { font-size: 34px; font-weight: 800; margin: 0; color: #222;}
+    .balance-card .points-value { font-size: 15px; font-weight: 600; color: #ff8c00;}
+    .section-title { font-size: 18px; font-weight: 700; margin-bottom: 13px; border-left: 4px solid #4f8cff; padding-left: 8px; letter-spacing: 1px;}
+    .task-card, .list-item {
+      background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 13px;
+      display: flex; align-items: center; cursor: pointer; border: 1px solid #e3e8f0;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: var(--card-shadow);
+    }
+    .task-card:hover { background: #f0f6ff; transform: translateY(-2px) scale(1.01);}
+    .task-icon {
+      font-size: 24px;
+      background: var(--gradient3);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px;
+      margin-right: 16px;
+      box-shadow: 0 2px 8px #fa709a22;
+    }
+    .task-details h3 { margin: 0; font-size: 15px; font-weight: 600; }
+    .task-details p { margin: 2px 0 0; font-size: 12px; color: var(--muted);}
+    .task-arrow { margin-left: auto; font-size: 16px; color: var(--muted);}
+    .footer-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 400px; margin: 0 auto;
+      display: flex; justify-content: space-around; background: #fff;
+      padding: 12px 0; border-top: 1px solid #e3e8f0; z-index: 10;
+      box-shadow: 0 -2px 12px #4f8cff11;
+    }
+    .nav-button {
+      display: flex; flex-direction: column; align-items: center; color: var(--muted);
+      background: none; border: none; font-size: 12px; cursor: pointer; padding: 5px 10px;
+      transition: color 0.2s, transform 0.2s;
+    }
+    .nav-button .icon { font-size: 20px; margin-bottom: 3px; }
+    .nav-button.active {
+      color: #4f8cff;
+      transform: scale(1.1);
+      font-weight: bold;
+    }
+    .powered-by {
+      text-align: center;
+      color: #888;
+      font-size: 14px;
+      margin-top: 40px;
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+    .connect-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px #4f8cff11;
+      padding: 14px 16px;
+      margin-bottom: 13px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 15px;
+      font-weight: 600;
+      gap: 10px;
+    }
+    .connect-left {
+      display: flex; align-items: center; gap: 8px;
+      color: #2563eb;
+      font-weight: 600;
+    }
+    .connect-card .fa-link {
+      color: #4f8cff;
+      font-size: 18px;
+    }
+    .connect-btn {
+      background: linear-gradient(90deg, #4f8cff 0%, #ff6bcb 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 18px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      display: flex; align-items: center; gap: 7px;
+      box-shadow: 0 2px 8px #4f8cff22;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .connect-btn:hover {
+      background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+      color: #fff;
+      transform: scale(1.04);
+      text-decoration: none;
+    }
+    .connect-btn .fa-telegram {
+      font-size: 17px;
+    }
+    /* Withdraw Card */
+    .withdraw-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 2px 12px #4f8cff11;
+      padding: 28px 22px 22px 22px;
+      max-width: 370px;
+      margin: 30px auto 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .withdraw-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #222;
+      border-left: 4px solid #4f8cff;
+      padding-left: 8px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .withdraw-label {
+      font-size: 15px;
+      color: #222;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .withdraw-input {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1.5px solid #e3e8f0;
+      font-size: 15px;
+      margin-bottom: 14px;
+      background: #f6f8fb;
+      outline: none;
+      transition: border 0.2s;
+    }
+    .withdraw-input:focus {
+      border: 1.5px solid #4f8cff;
+    }
+    .withdraw-info {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 18px;
+    }
+    .withdraw-btn {
+      width: 100%;
+      padding: 15px 0;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: 700;
+      background: linear-gradient(90deg, #fa709a 0%, #fee140 100%);
+      color: #222;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #fa709a22;
+      transition: background 0.2s, transform 0.2s;
+      letter-spacing: 1px;
+    }
+    .withdraw-btn:disabled {
+      background: linear-gradient(90deg, #bdbdbd 0%, #e0e0e0 100%) !important;
+      color: #888 !important;
+      cursor: not-allowed;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    /* Page Card for other pages */
+    .page-card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 2px 16px #4f8cff11;
+      padding: 24px 18px 18px 18px;
+      margin-bottom: 22px;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .page-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: #2563eb;
+      margin-bottom: 18px;
+      border-left: 4px solid #4f8cff;
+      padding-left: 8px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .mini-card {
+      background: #f6f8fb;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px #4f8cff11;
+      padding: 14px 12px;
+      margin-bottom: 14px;
+      display: flex; align-items: center;
+      transition: background 0.2s, transform 0.2s;
+      cursor: default;
+      gap: 12px;
+    }
+    .mini-card:last-child { margin-bottom: 0; }
+    .mini-card .icon {
+      font-size: 18px;
+      background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+      color: #fff;
+      border-radius: 8px;
+      padding: 7px;
+      margin-right: 8px;
+      box-shadow: 0 2px 8px #43e97b22;
+    }
+    .mini-card .referral-avatar, .mini-card .leaderboard-avatar {
+      width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(90deg, #4f8cff 0%, #ff6bcb 100%);
+      color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; margin-right: 12px;
+    }
+    .mini-card .referral-info, .mini-card .leaderboard-info { flex: 1; }
+    .mini-card .referral-name, .mini-card .leaderboard-name { font-weight: 600; }
+    .mini-card .referral-date, .mini-card .leaderboard-score, .mini-card .history-date {
+      font-size: 12px; color: #888;
+    }
+    .mini-card .referral-score, .mini-card .leaderboard-score {
+      color: #ff8c00; font-weight: 600; margin-left: auto;
+    }
+    .mini-card .history-name { font-weight: 600; }
+    .mini-card .history-date { color: #888; font-size: 12px;}
+    .copy-btn {
+      background: #43e97b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 3px 10px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 6px;
+      transition: background 0.2s;
+    }
+    .copy-btn:hover { background: #fa709a;}
+    .ref-link-box {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+      background: #f6f8fb; border-radius: 8px; padding: 8px 10px;
+    }
+    .leaderboard-rank {
+      font-weight: bold; color: #4f8cff; width: 28px;
+    }
+    @media (max-width: 500px) {
+      .container { border-radius: 0; min-height: 100vh;}
+      main { padding: 12px; padding-bottom: 90px;}
+      .withdraw-card { padding: 18px 6px 18px 6px; }
+      .page-card { padding: 14px 4px 10px 4px;}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <main>
+      <div class="notice-bar" id="notice-bar">
+        <i class="fa-solid fa-bell"></i>
+        <span id="notice-text">Welcome to Nobin's EarnX! 🎉</span>
+      </div>
+      <!-- Home View -->
+      <div id="home-view" class="view active">
+        <div class="user-header-card">
+          <div class="user-avatar" id="profile-pic">U</div>
+          <div class="user-info">
+            <div class="username" id="username">Demo User</div>
+            <div class="title">Welcome to EarnX Bot!</div>
+          </div>
+        </div>
+        <div class="balance-card">
+          <div class="label">Total Balance</div>
+          <div class="balance-value" id="balance-value">$0.00</div>
+          <div class="points-value"><i class="fa-solid fa-coins"></i> <span id="points-value">0</span> Points</div>
+        </div>
+        <div class="section-title">Quick Actions</div>
+        <div class="task-card" onclick="showView('tasks-view')">
+          <div class="task-icon"><i class="fa-solid fa-list-check"></i></div>
+          <div class="task-details"><h3>View Tasks</h3><p>Watch ads & complete tasks to earn points.</p></div>
+          <div class="task-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <div class="task-card" onclick="showView('withdraw-view')">
+          <div class="task-icon"><i class="fa-solid fa-wallet"></i></div>
+          <div class="task-details"><h3>Withdraw</h3><p>Request to withdraw your balance.</p></div>
+          <div class="task-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+        <!-- Connect With Us -->
+        <div class="connect-card" style="margin-top:18px;">
+          <div class="connect-left">
+            <i class="fa-solid fa-link"></i>
+            <span>Connect with us:</span>
+          </div>
+          <a href="#" id="connect-link" target="_blank" class="connect-btn">
+            <i class="fa-brands fa-telegram"></i> Chat Now
+          </a>
+        </div>
+        <div class="powered-by">
+          Powered by <b>nobin</b> | &copy; 2024 EarnX
+        </div>
+      </div>
+      <!-- Tasks View -->
+      <div id="tasks-view" class="view">
+        <div class="page-card">
+          <div class="page-title"><i class="fa-solid fa-list-check"></i> Earning Tasks</div>
+          <div class="task-card" onclick="earnPoints('ad')">
+            <div class="task-icon"><i class="fa-solid fa-rectangle-ad"></i></div>
+            <div class="task-details"><h3>Watch Ad</h3><p>Watch a short ad to earn <span id="ad-point-show">1</span> point(s).</p></div>
+            <div class="task-arrow"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="task-card" onclick="earnPoints('offer')">
+            <div class="task-icon"><i class="fa-solid fa-gift"></i></div>
+            <div class="task-details"><h3>Complete Offer</h3><p>Complete an offer to earn 5 points.</p></div>
+            <div class="task-arrow"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="task-card" onclick="showView('referral-view')">
+            <div class="task-icon"><i class="fa-solid fa-user-plus"></i></div>
+            <div class="task-details"><h3>Referral</h3><p>Invite friends & earn bonus points.</p></div>
+            <div class="task-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+          </div>
+        </div>
+      </div>
+      <!-- Referral View -->
+      <div id="referral-view" class="view">
+        <div class="page-card">
+          <div class="page-title"><i class="fa-solid fa-user-plus"></i> Referral</div>
+          <div class="ref-link-box">
+            <span id="ref-link2">https://t.me/EarnXBot?start=12345</span>
+            <button class="copy-btn" onclick="copyRef()">Copy</button>
+          </div>
+          <div style="font-size:13px; color:#888; margin-bottom:14px;">
+            Share your referral link. For every friend who joins, you get <b>2 points!</b>
+          </div>
+          <div class="page-title" style="font-size:16px;margin-bottom:10px;"><i class="fa-solid fa-users"></i> Your Referrals</div>
+          <div class="mini-card">
+            <div class="referral-avatar">A</div>
+            <div class="referral-info">
+              <div class="referral-name">Alice</div>
+              <div class="referral-date">Joined: 2024-07-17</div>
+            </div>
+            <div class="referral-score">+2 pts</div>
+          </div>
+          <div class="mini-card">
+            <div class="referral-avatar">B</div>
+            <div class="referral-info">
+              <div class="referral-name">Bob</div>
+              <div class="referral-date">Joined: 2024-07-16</div>
+            </div>
+            <div class="referral-score">+2 pts</div>
+          </div>
+        </div>
+      </div>
+      <!-- Withdraw View -->
+      <div id="withdraw-view" class="view">
+        <div class="withdraw-card">
+          <div class="withdraw-title" style="display:flex;align-items:center;gap:8px;">
+            <i class="fa-solid fa-wallet" style="color:#4f8cff;font-size:22px;"></i>
+            Withdraw
+          </div>
+          <div class="withdraw-label">Enter your USDT (BEP20) address</div>
+          <input type="text" id="usdt-address" class="withdraw-input" placeholder="e.g. 0x1234...abcd" />
+          <div class="withdraw-info">
+            Minimum withdraw: <b>$5.00</b><br>
+            Your balance: <span id="withdraw-balance">$0.00</span>
+          </div>
+          <button class="withdraw-btn" id="withdraw-btn" onclick="withdrawRequest()">REQUEST WITHDRAW</button>
+        </div>
+        <div class="connect-card" style="margin-top:18px;">
+          <div class="connect-left">
+            <i class="fa-solid fa-link"></i>
+            <span>Connect with us:</span>
+          </div>
+          <a href="#" id="connect-link" target="_blank" class="connect-btn">
+            <i class="fa-brands fa-telegram"></i> Chat Now
+          </a>
+        </div>
+        <div class="powered-by">
+          Powered by <b>nobin</b> | &copy; 2024 EarnX
+        </div>
+        <div class="history-list" id="history-list"></div>
+      </div>
+      <!-- Leaderboard View -->
+      <div id="leaderboard-view" class="view">
+        <div class="page-card">
+          <div class="page-title"><i class="fa-solid fa-trophy"></i> Top Earners</div>
+          <div class="mini-card">
+            <div class="leaderboard-rank">#1</div>
+            <div class="leaderboard-avatar">C</div>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">CryptoKing</div>
+            </div>
+            <div class="leaderboard-score">2540 pts</div>
+          </div>
+          <div class="mini-card">
+            <div class="leaderboard-rank">#2</div>
+            <div class="leaderboard-avatar">E</div>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">Elena</div>
+            </div>
+            <div class="leaderboard-score">2210 pts</div>
+          </div>
+          <div class="mini-card">
+            <div class="leaderboard-rank">#3</div>
+            <div class="leaderboard-avatar">P</div>
+            <div class="leaderboard-info">
+              <div class="leaderboard-name">ProMiner</div>
+            </div>
+            <div class="leaderboard-score">1980 pts</div>
+          </div>
+        </div>
+      </div>
+      <!-- History View -->
+      <div id="history-view" class="view">
+        <div class="page-card">
+          <div class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</div>
+          <div class="mini-card">
+            <div class="icon"><i class="fa-solid fa-plus-circle"></i></div>
+            <div>
+              <div class="history-name">+1 Point from Ad</div>
+              <div class="history-date">2024-07-17 12:00</div>
+            </div>
+          </div>
+          <div class="mini-card">
+            <div class="icon"><i class="fa-solid fa-plus-circle"></i></div>
+            <div>
+              <div class="history-name">+2 Points from Referral</div>
+              <div class="history-date">2024-07-16 18:30</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <nav class="footer-nav">
+      <button class="nav-button active" onclick="showView('home-view')"><i class="icon fa-solid fa-house"></i>Home</button>
+      <button class="nav-button" onclick="showView('tasks-view')"><i class="icon fa-solid fa-list-check"></i>Tasks</button>
+      <button class="nav-button" onclick="showView('referral-view')"><i class="icon fa-solid fa-user-plus"></i>Referral</button>
+      <button class="nav-button" onclick="showView('leaderboard-view')"><i class="icon fa-solid fa-trophy"></i>Leaders</button>
+      <button class="nav-button" onclick="showView('history-view')"><i class="icon fa-solid fa-clock-rotate-left"></i>History</button>
+    </nav>
+  </div>
+  <script>
+    // Telegram Mini App JS
+    if(window.Telegram && Telegram.WebApp) {
+      Telegram.WebApp.expand();
+      Telegram.WebApp.ready();
+    }
+
+    // Notice & Connect link (localStorage থেকে)
+    let notice = localStorage.getItem('notice') || "Welcome to Nobin's EarnX! 🎉";
+    let connectLink = localStorage.getItem('connectLink') || "https://t.me/nobin_support";
+    document.getElementById('notice-text').textContent = notice;
+    document.getElementById('connect-link').href = connectLink;
+
+    // Ad Point (admin panel থেকে)
+    let adPoint = parseInt(localStorage.getItem('adPoint') || '1');
+    document.getElementById('ad-point-show').textContent = adPoint;
+
+    let currentUser = { id: 101, name: "CryptoKing", status: "active" };
+    let points = parseInt(localStorage.getItem('points') || '0');
+    let balance = parseFloat(localStorage.getItem('balance') || '10.65'); // Default $10.65 for demo
+    const ratePerPoint = 0.05;
+    let withdrawPending = localStorage.getItem('withdrawPending');
+    if (withdrawPending === null) withdrawPending = false;
+    else withdrawPending = withdrawPending === 'true';
+
+    // টেলিগ্রাম ইউজার থাকলে নাম ও প্রোফাইল লেটার দেখাও
+    if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+      let tgUser = Telegram.WebApp.initDataUnsafe.user;
+      document.getElementById('username').textContent = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
+      document.getElementById('profile-pic').textContent = tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U';
+    }
+
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('active'));
+      let btns = document.querySelectorAll('.nav-button');
+      if(id === 'home-view') btns[0].classList.add('active');
+      if(id === 'tasks-view') btns[1].classList.add('active');
+      if(id === 'referral-view') btns[2].classList.add('active');
+      if(id === 'leaderboard-view') btns[3].classList.add('active');
+      if(id === 'history-view') btns[4].classList.add('active');
+      if(id === 'withdraw-view') btns.forEach(b=>b.classList.remove('active'));
+      if(id === 'withdraw-view') document.querySelector('.nav-button.active')?.classList.remove('active');
+      if(id === 'withdraw-view') {
+        document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
+        let btn = document.getElementById('withdraw-btn');
+        withdrawPending = localStorage.getItem('withdrawPending');
+        if (withdrawPending === null) withdrawPending = false;
+        else withdrawPending = withdrawPending === 'true';
+        if(withdrawPending) {
+          btn.textContent = "PENDING";
+          btn.disabled = true;
+        } else {
+          btn.textContent = "REQUEST WITHDRAW";
+          btn.disabled = false;
+        }
+      }
+      // Update ad point show if tasks-view
+      if(id === 'tasks-view') {
+        adPoint = parseInt(localStorage.getItem('adPoint') || '1');
+        document.getElementById('ad-point-show').textContent = adPoint;
+      }
+    }
+
+    function earnPoints(type) {
+      adPoint = parseInt(localStorage.getItem('adPoint') || '1');
+      let earn = 0;
+      if(type === 'ad') earn = adPoint;
+      if(type === 'offer') earn = 5;
+      points += earn;
+      balance = points * ratePerPoint;
+      localStorage.setItem('points', points);
+      localStorage.setItem('balance', balance);
+      document.getElementById('points-value').textContent = points;
+      document.getElementById('balance-value').textContent = `$${balance.toFixed(2)}`;
+      document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
+      let now = new Date();
+      let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      let msg = `<div class="mini-card">
+        <div class="icon"><i class="fa-solid fa-plus-circle"></i></div>
+        <div>
+          <div class="history-name">+${earn} Point${earn>1?'s':''} from ${type==='ad'?'Ad':'Offer'}</div>
+          <div class="history-date">${time}</div>
+        </div>
+      </div>`;
+      document.getElementById('history-list').innerHTML = msg + document.getElementById('history-list').innerHTML;
+      alert(`You earned +${earn} point${earn>1?'s':''}!`);
+    }
+
+    function copyRef() {
+      let ref = document.getElementById('ref-link2').textContent;
+      navigator.clipboard.writeText(ref);
+      alert('Referral link copied!');
+    }
+
+    function withdrawRequest() {
+      let address = document.getElementById('usdt-address').value.trim();
+      let btn = document.getElementById('withdraw-btn');
+      if (!address) {
+        alert('Please enter your USDT (BEP20) address!');
+        return;
+      }
+      if (balance < 5) {
+        alert('Minimum withdraw is $5.00');
+        return;
+      }
+      let withdraws = JSON.parse(localStorage.getItem('withdrawRequests') || '[]');
+      withdraws.push({
+        id: Date.now().toString(),
+        userId: currentUser.id,
+        name: currentUser.name,
+        address: address,
+        amount: balance,
+        status: "pending"
+      });
+      localStorage.setItem('withdrawRequests', JSON.stringify(withdraws));
+      document.getElementById('usdt-address').value = '';
+      btn.textContent = "PENDING";
+      btn.disabled = true;
+      withdrawPending = true;
+      localStorage.setItem('withdrawPending', 'true');
+      // হিস্টরিতে যোগ করো
+      let now = new Date();
+      let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+      let msg = `<div class="mini-card">
+        <div class="icon"><i class="fa-solid fa-paper-plane"></i></div>
+        <div>
+          <div class="history-name">Withdraw request: $${balance.toFixed(2)}</div>
+          <div class="history-date">${time}</div>
+        </div>
+      </div>`;
+      document.getElementById('history-list').innerHTML = msg + document.getElementById('history-list').innerHTML;
+      alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
+    }
+
+    // Init
+    document.getElementById('points-value').textContent = points;
+    document.getElementById('balance-value').textContent = `$${balance.toFixed(2)}`;
+    document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
+    // Withdraw pending UI (on page load)
+    if(document.getElementById('withdraw-btn')) {
+      let btn = document.getElementById('withdraw-btn');
+      withdrawPending = localStorage.getItem('withdrawPending');
+      if (withdrawPending === null) withdrawPending = false;
+      else withdrawPending = withdrawPending === 'true';
+      if(withdrawPending) {
+        btn.textContent = "PENDING";
+        btn.disabled = true;
+      } else {
+        btn.textContent = "REQUEST WITHDRAW";
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
