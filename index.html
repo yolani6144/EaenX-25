@@ -517,7 +517,7 @@
 
     let points = 0;
     let balance = 0;
-    const ratePerPoint = 0.05;
+    const ratePerPoint = parseFloat(localStorage.getItem('ratePerPoint') || '0.05');
     let withdrawPending = false;
 
     function showView(id) {
@@ -619,32 +619,35 @@
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
     }
 
-    // Monetag Ad Show (Watch Ad modal)
+    // Monetag Ad Show (Watch Ad modal) - Firebase থেকে রিড
     function showAdModal() {
-      let monetagAdCode = localStorage.getItem('monetagAdCode') || '';
       let slot = document.getElementById('monetag-ad-slot');
-      slot.innerHTML = '';
-      if(monetagAdCode) {
-        if(monetagAdCode.includes('<script')) {
-          let temp = document.createElement('div');
-          temp.innerHTML = monetagAdCode;
-          Array.from(temp.childNodes).forEach(node => {
-            if(node.tagName === 'SCRIPT') {
-              let s = document.createElement('script');
-              if(node.src) s.src = node.src;
-              if(node.text) s.text = node.text;
-              document.body.appendChild(s);
-            } else {
-              slot.appendChild(node);
-            }
-          });
+      slot.innerHTML = "<div style='color:#888;text-align:center;'>Loading ad...</div>";
+      firebase.database().ref('adcode').once('value', function(snapshot) {
+        let monetagAdCode = snapshot.val() || '';
+        slot.innerHTML = '';
+        if(monetagAdCode) {
+          if(monetagAdCode.includes('<script')) {
+            let temp = document.createElement('div');
+            temp.innerHTML = monetagAdCode;
+            Array.from(temp.childNodes).forEach(node => {
+              if(node.tagName === 'SCRIPT') {
+                let s = document.createElement('script');
+                if(node.src) s.src = node.src;
+                if(node.text) s.text = node.text;
+                document.body.appendChild(s);
+              } else {
+                slot.appendChild(node);
+              }
+            });
+          } else {
+            slot.innerHTML = monetagAdCode;
+          }
         } else {
-          slot.innerHTML = monetagAdCode;
+          slot.innerHTML = "<div style='color:#888;text-align:center;'>No ad code set.</div>";
         }
-      } else {
-        slot.innerHTML = "<div style='color:#888;text-align:center;'>No ad code set.</div>";
-      }
-      document.getElementById('ad-modal').style.display = 'flex';
+        document.getElementById('ad-modal').style.display = 'flex';
+      });
     }
     function closeAdModal() {
       document.getElementById('ad-modal').style.display = 'none';
