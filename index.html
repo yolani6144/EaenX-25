@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EarnX Bot - Nobin Edition</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Telegram Mini App JS -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    /* ... তোমার আগের CSS ... */
     :root {
       --primary: #4f8cff;
       --secondary: #fff;
@@ -494,31 +494,28 @@
     </nav>
   </div>
   <script>
-    // Telegram Mini App JS
+    // সব ডেটা রিসেট (শুধু ডেভেলপমেন্টে, লাইভে চাইলে বাদ দাও)
+    localStorage.clear();
+
     if(window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.expand();
       Telegram.WebApp.ready();
     }
 
-    // Notice & Connect link (localStorage থেকে)
     let notice = localStorage.getItem('notice') || "Welcome to Nobin's EarnX! 🎉";
     let connectLink = localStorage.getItem('connectLink') || "https://t.me/nobin_support";
     document.getElementById('notice-text').textContent = notice;
     document.getElementById('connect-link').href = connectLink;
 
-    // Ad Point (admin panel থেকে)
     let adPoint = parseInt(localStorage.getItem('adPoint') || '1');
     document.getElementById('ad-point-show').textContent = adPoint;
 
     let currentUser = { id: 101, name: "CryptoKing", status: "active" };
-    let points = parseInt(localStorage.getItem('points') || '0');
-    let balance = parseFloat(localStorage.getItem('balance') || '10.65'); // Default $10.65 for demo
+    let points = 0;
+    let balance = 0;
     const ratePerPoint = 0.05;
-    let withdrawPending = localStorage.getItem('withdrawPending');
-    if (withdrawPending === null) withdrawPending = false;
-    else withdrawPending = withdrawPending === 'true';
+    let withdrawPending = false;
 
-    // টেলিগ্রাম ইউজার থাকলে নাম ও প্রোফাইল লেটার দেখাও
     if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
       let tgUser = Telegram.WebApp.initDataUnsafe.user;
       document.getElementById('username').textContent = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
@@ -540,9 +537,6 @@
       if(id === 'withdraw-view') {
         document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
         let btn = document.getElementById('withdraw-btn');
-        withdrawPending = localStorage.getItem('withdrawPending');
-        if (withdrawPending === null) withdrawPending = false;
-        else withdrawPending = withdrawPending === 'true';
         if(withdrawPending) {
           btn.textContent = "PENDING";
           btn.disabled = true;
@@ -551,7 +545,6 @@
           btn.disabled = false;
         }
       }
-      // Update ad point show if tasks-view
       if(id === 'tasks-view') {
         adPoint = parseInt(localStorage.getItem('adPoint') || '1');
         document.getElementById('ad-point-show').textContent = adPoint;
@@ -615,7 +608,6 @@
       btn.disabled = true;
       withdrawPending = true;
       localStorage.setItem('withdrawPending', 'true');
-      // হিস্টরিতে যোগ করো
       let now = new Date();
       let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
       let msg = `<div class="mini-card">
@@ -629,16 +621,11 @@
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
     }
 
-    // Init
     document.getElementById('points-value').textContent = points;
     document.getElementById('balance-value').textContent = `$${balance.toFixed(2)}`;
     document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
-    // Withdraw pending UI (on page load)
     if(document.getElementById('withdraw-btn')) {
       let btn = document.getElementById('withdraw-btn');
-      withdrawPending = localStorage.getItem('withdrawPending');
-      if (withdrawPending === null) withdrawPending = false;
-      else withdrawPending = withdrawPending === 'true';
       if(withdrawPending) {
         btn.textContent = "PENDING";
         btn.disabled = true;
