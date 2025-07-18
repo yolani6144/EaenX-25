@@ -5,9 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EarnX Bot - Nobin Edition</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Telegram Mini App JS -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    /* ... তোমার আগের CSS ... */
     :root {
       --primary: #4f8cff;
       --secondary: #fff;
@@ -380,29 +383,14 @@
         <div class="page-card">
           <div class="page-title"><i class="fa-solid fa-user-plus"></i> Referral</div>
           <div class="ref-link-box">
-            <span id="ref-link2">https://t.me/EarnXBot?start=12345</span>
+            <span id="ref-link2"></span>
             <button class="copy-btn" onclick="copyRef()">Copy</button>
           </div>
           <div style="font-size:13px; color:#888; margin-bottom:14px;">
             Share your referral link. For every friend who joins, you get <b>2 points!</b>
           </div>
           <div class="page-title" style="font-size:16px;margin-bottom:10px;"><i class="fa-solid fa-users"></i> Your Referrals</div>
-          <div class="mini-card">
-            <div class="referral-avatar">A</div>
-            <div class="referral-info">
-              <div class="referral-name">Alice</div>
-              <div class="referral-date">Joined: 2024-07-17</div>
-            </div>
-            <div class="referral-score">+2 pts</div>
-          </div>
-          <div class="mini-card">
-            <div class="referral-avatar">B</div>
-            <div class="referral-info">
-              <div class="referral-name">Bob</div>
-              <div class="referral-date">Joined: 2024-07-16</div>
-            </div>
-            <div class="referral-score">+2 pts</div>
-          </div>
+          <div id="referral-list"></div>
         </div>
       </div>
       <!-- Withdraw View -->
@@ -438,50 +426,14 @@
       <div id="leaderboard-view" class="view">
         <div class="page-card">
           <div class="page-title"><i class="fa-solid fa-trophy"></i> Top Earners</div>
-          <div class="mini-card">
-            <div class="leaderboard-rank">#1</div>
-            <div class="leaderboard-avatar">C</div>
-            <div class="leaderboard-info">
-              <div class="leaderboard-name">CryptoKing</div>
-            </div>
-            <div class="leaderboard-score">2540 pts</div>
-          </div>
-          <div class="mini-card">
-            <div class="leaderboard-rank">#2</div>
-            <div class="leaderboard-avatar">E</div>
-            <div class="leaderboard-info">
-              <div class="leaderboard-name">Elena</div>
-            </div>
-            <div class="leaderboard-score">2210 pts</div>
-          </div>
-          <div class="mini-card">
-            <div class="leaderboard-rank">#3</div>
-            <div class="leaderboard-avatar">P</div>
-            <div class="leaderboard-info">
-              <div class="leaderboard-name">ProMiner</div>
-            </div>
-            <div class="leaderboard-score">1980 pts</div>
-          </div>
+          <div id="leaderboard-list"></div>
         </div>
       </div>
       <!-- History View -->
       <div id="history-view" class="view">
         <div class="page-card">
           <div class="page-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</div>
-          <div class="mini-card">
-            <div class="icon"><i class="fa-solid fa-plus-circle"></i></div>
-            <div>
-              <div class="history-name">+1 Point from Ad</div>
-              <div class="history-date">2024-07-17 12:00</div>
-            </div>
-          </div>
-          <div class="mini-card">
-            <div class="icon"><i class="fa-solid fa-plus-circle"></i></div>
-            <div>
-              <div class="history-name">+2 Points from Referral</div>
-              <div class="history-date">2024-07-16 18:30</div>
-            </div>
-          </div>
+          <div id="history-list"></div>
         </div>
       </div>
     </main>
@@ -494,14 +446,50 @@
     </nav>
   </div>
   <script>
-    // সব ডেটা রিসেট (শুধু ডেভেলপমেন্টে, লাইভে চাইলে বাদ দাও)
-    localStorage.clear();
-
+    // Telegram Mini App JS
     if(window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.expand();
       Telegram.WebApp.ready();
     }
 
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCB4GocXMbka1e8NSEiJnsEkKm39_t6KRE",
+      authDomain: "earnx25-admin.firebaseapp.com",
+      projectId: "earnx25-admin",
+      storageBucket: "earnx25-admin.appspot.com",
+      messagingSenderId: "248014987232",
+      appId: "1:248014987232:web:f5e0fc0ed57c3a36009585"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // ইউজার ইনফো (টেলিগ্রাম থেকে নিতে চাইলে)
+    let currentUser = { id: 101, name: "Demo User" };
+    if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+      let tgUser = Telegram.WebApp.initDataUnsafe.user;
+      currentUser = {
+        id: tgUser.id,
+        name: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
+      };
+      document.getElementById('username').textContent = currentUser.name;
+      document.getElementById('profile-pic').textContent = tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U';
+    }
+
+    // ইউজার Firebase-এ সেভ করো (প্রথমবার এপ ওপেনেই)
+    db.ref('users/' + currentUser.id).set({
+      id: currentUser.id,
+      name: currentUser.name,
+      balance: 0,
+      status: "active"
+    });
+
+    // রেফার লিংক (প্রত্যেক ইউজারের জন্য আলাদা)
+    let botUsername = "EarnXBot"; // তোমার বটের ইউজারনেম
+    let referLink = `https://t.me/${botUsername}?start=${currentUser.id}`;
+    document.getElementById('ref-link2').textContent = referLink;
+
+    // বাকি আগের সব কোড (ব্যালেন্স, পয়েন্ট, নোটিশ, উইথড্র, ইত্যাদি)
     let notice = localStorage.getItem('notice') || "Welcome to Nobin's EarnX! 🎉";
     let connectLink = localStorage.getItem('connectLink') || "https://t.me/nobin_support";
     document.getElementById('notice-text').textContent = notice;
@@ -510,17 +498,10 @@
     let adPoint = parseInt(localStorage.getItem('adPoint') || '1');
     document.getElementById('ad-point-show').textContent = adPoint;
 
-    let currentUser = { id: 101, name: "CryptoKing", status: "active" };
     let points = 0;
     let balance = 0;
     const ratePerPoint = 0.05;
     let withdrawPending = false;
-
-    if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
-      let tgUser = Telegram.WebApp.initDataUnsafe.user;
-      document.getElementById('username').textContent = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '');
-      document.getElementById('profile-pic').textContent = tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U';
-    }
 
     function showView(id) {
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
