@@ -421,7 +421,9 @@
             <button class="copy-btn" onclick="copyRef()">Copy</button>
           </div>
           <div style="font-size:13px; color:#888; margin-bottom:14px;">
-            Share your referral link. For every friend who joins, you get <b>2 points!</b>
+            Share your referral link! <br>
+            <b>Earn 2 points</b> instantly for every friend who joins using your link.<br>
+            <b>Plus, you will earn 10% of all points</b> your referred friends earn, automatically!
           </div>
           <div class="page-title" style="font-size:16px;margin-bottom:10px;"><i class="fa-solid fa-users"></i> Your Referrals</div>
           <div id="referral-list"></div>
@@ -560,6 +562,22 @@
               let newPoints = (refUser.points || 0) + 2;
               let newBalance = newPoints * ratePerPoint;
               db.ref('users/' + refBy).update({ points: newPoints, balance: newBalance });
+
+              // Add to referrer's history
+              let now = new Date();
+              let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+              let msg = `<div class="mini-card">
+                <div class="icon"><i class="fa-solid fa-user-plus"></i></div>
+                <div>
+                  <div class="history-name">+2 Points from Referral (${currentUser.name})</div>
+                  <div class="history-date">${time}</div>
+                </div>
+              </div>`;
+              db.ref('users/' + refBy + '/history').once('value').then(function(hsnap) {
+                let arr = hsnap.val() || [];
+                arr.unshift(msg);
+                db.ref('users/' + refBy + '/history').set(arr);
+              });
             }
           });
         }
@@ -652,9 +670,45 @@
         points: points,
         balance: balance
       });
-      document.getElementById('points-value').textContent = points;
-      document.getElementById('balance-value').textContent = `$${balance.toFixed(2)}`;
-      document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
+
+      // 10% referral bonus
+      db.ref('users/' + currentUser.id).once('value').then(function(snap) {
+        let user = snap.val();
+        if(user && user.refBy) {
+          let bonus = Math.floor(earn * 0.10);
+          if(bonus > 0) {
+            db.ref('users/' + user.refBy).once('value').then(function(refSnap) {
+              let refUser = refSnap.val();
+              if(refUser) {
+                let refPoints = (refUser.points || 0) + bonus;
+                let refBalance = refPoints * ratePerPoint;
+                db.ref('users/' + user.refBy).update({
+                  points: refPoints,
+                  balance: refBalance
+                });
+
+                // Add to referrer's history
+                let now = new Date();
+                let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+                let msg = `<div class="mini-card">
+                  <div class="icon"><i class="fa-solid fa-gift"></i></div>
+                  <div>
+                    <div class="history-name">+${bonus} Points (10% from ${currentUser.name})</div>
+                    <div class="history-date">${time}</div>
+                  </div>
+                </div>`;
+                db.ref('users/' + user.refBy + '/history').once('value').then(function(hsnap) {
+                  let arr = hsnap.val() || [];
+                  arr.unshift(msg);
+                  db.ref('users/' + user.refBy + '/history').set(arr);
+                });
+              }
+            });
+          }
+        }
+      });
+
+      // Own history
       let now = new Date();
       let time = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0')+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
       let msg = `<div class="mini-card">
@@ -664,9 +718,11 @@
           <div class="history-date">${time}</div>
         </div>
       </div>`;
-      let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
-      historyArr.unshift(msg);
-      localStorage.setItem('historyArr', JSON.stringify(historyArr));
+      db.ref('users/' + currentUser.id + '/history').once('value').then(function(hsnap) {
+        let arr = hsnap.val() || [];
+        arr.unshift(msg);
+        db.ref('users/' + currentUser.id + '/history').set(arr);
+      });
     }
 
     function withdrawRequest() {
@@ -704,9 +760,11 @@
           <div class="history-date">${time}</div>
         </div>
       </div>`;
-      let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
-      historyArr.unshift(msg);
-      localStorage.setItem('historyArr', JSON.stringify(historyArr));
+      db.ref('users/' + currentUser.id + '/history').once('value').then(function(hsnap) {
+        let arr = hsnap.val() || [];
+        arr.unshift(msg);
+        db.ref('users/' + currentUser.id + '/history').set(arr);
+      });
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
     }
 
@@ -796,8 +854,10 @@
     }
 
     function loadHistory() {
-      let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
-      document.getElementById('history-list').innerHTML = historyArr.length ? historyArr.join('') : '<div style="color:#888;font-size:14px;">No activity yet.</div>';
+      db.ref('users/' + currentUser.id + '/history').once('value').then(function(snap) {
+        let arr = snap.val() || [];
+        document.getElementById('history-list').innerHTML = arr.length ? arr.join('') : '<div style="color:#888;font-size:14px;">No activity yet.</div>';
+      });
     }
 
     function loadLeaderboard() {
