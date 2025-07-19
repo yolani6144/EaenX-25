@@ -853,7 +853,7 @@
       alert('Nagad withdraw request sent!\nNumber: '+number+'\nAmount: $'+amount.toFixed(2));
     }
 
-    // --------- REFERRALS: Only Name & Balance ---------
+    // --------- REFERRALS: Only Name & Points ---------
     function loadReferrals() {
       db.ref('users/' + currentUser.id + '/referrals').once('value').then(function(snap) {
         let arr = snap.val() || [];
@@ -872,7 +872,7 @@
                   <div class="referral-avatar">${user.name[0]}</div>
                   <div class="referral-info">
                     <div class="referral-name">${user.name}</div>
-                    <div class="referral-date">Balance: $${(user.balance || 0).toFixed(2)}</div>
+                    <div class="referral-date">Points: ${user.points || 0}</div>
                   </div>
                 </div>
               `;
