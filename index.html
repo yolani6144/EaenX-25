@@ -853,6 +853,40 @@
       alert('Nagad withdraw request sent!\nNumber: '+number+'\nAmount: $'+amount.toFixed(2));
     }
 
+    // --------- REFERRALS: Only Name & Balance ---------
+    function loadReferrals() {
+      db.ref('users/' + currentUser.id + '/referrals').once('value').then(function(snap) {
+        let arr = snap.val() || [];
+        if(!arr || arr.length === 0) {
+          document.getElementById('referral-list').innerHTML = '<div style="color:#888;font-size:14px;">No referrals yet.</div>';
+          return;
+        }
+        let html = '';
+        let loaded = 0;
+        arr.forEach(function(refId) {
+          db.ref('users/' + refId).once('value').then(function(userSnap) {
+            let user = userSnap.val();
+            if(user) {
+              html += `
+                <div class="mini-card">
+                  <div class="referral-avatar">${user.name[0]}</div>
+                  <div class="referral-info">
+                    <div class="referral-name">${user.name}</div>
+                    <div class="referral-date">Balance: $${(user.balance || 0).toFixed(2)}</div>
+                  </div>
+                </div>
+              `;
+            }
+            loaded++;
+            if(loaded === arr.length) {
+              document.getElementById('referral-list').innerHTML = html;
+            }
+          });
+        });
+      });
+    }
+    // --------------------------------------------------
+
     function loadHistory() {
       db.ref('users/' + currentUser.id + '/history').once('value').then(function(snap) {
         let arr = snap.val() || [];
@@ -881,39 +915,6 @@
           `;
         });
         document.getElementById('leaderboard-list').innerHTML = html;
-      });
-    }
-
-    function loadReferrals() {
-      db.ref('users/' + currentUser.id + '/referrals').once('value').then(function(snap) {
-        let arr = snap.val() || [];
-        if(!arr || arr.length === 0) {
-          document.getElementById('referral-list').innerHTML = '<div style="color:#888;font-size:14px;">No referrals yet.</div>';
-          return;
-        }
-        let html = '';
-        let loaded = 0;
-        arr.forEach(function(refId) {
-          db.ref('users/' + refId).once('value').then(function(userSnap) {
-            let user = userSnap.val();
-            if(user) {
-              html += `
-                <div class="mini-card">
-                  <div class="referral-avatar">${user.name[0]}</div>
-                  <div class="referral-info">
-                    <div class="referral-name">${user.name}</div>
-                    <div class="referral-date">${user.id}</div>
-                  </div>
-                  <div class="referral-score">+2</div>
-                </div>
-              `;
-            }
-            loaded++;
-            if(loaded === arr.length) {
-              document.getElementById('referral-list').innerHTML = html;
-            }
-          });
-        });
       });
     }
 
