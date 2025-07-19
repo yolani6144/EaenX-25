@@ -517,7 +517,7 @@
 
     let points = 0;
     let balance = 0;
-    const ratePerPoint = parseFloat(localStorage.getItem('ratePerPoint') || '0.05');
+    const ratePerPoint = 0.05;
     let withdrawPending = false;
 
     function showView(id) {
@@ -619,36 +619,20 @@
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
     }
 
-    // Monetag Ad Show (Watch Ad modal) - Firebase থেকে রিড
+    // Monetag Ad Show (Watch Ad modal)
     function showAdModal() {
-      let slot = document.getElementById('monetag-ad-slot');
-      slot.innerHTML = "<div style='color:#888;text-align:center;'>Loading ad...</div>";
-      firebase.database().ref('adcode').once('value', function(snapshot) {
-        let monetagAdCode = snapshot.val() || '';
-        slot.innerHTML = '';
-        if(monetagAdCode) {
-          if(monetagAdCode.includes('<script')) {
-            let temp = document.createElement('div');
-            temp.innerHTML = monetagAdCode;
-            Array.from(temp.childNodes).forEach(node => {
-              if(node.tagName === 'SCRIPT') {
-                let s = document.createElement('script');
-                if(node.src) s.src = node.src;
-                if(node.text) s.text = node.text;
-                document.body.appendChild(s);
-              } else {
-                slot.appendChild(node);
-              }
-            });
-          } else {
-            slot.innerHTML = monetagAdCode;
+      if (typeof show_9590129 === "function") {
+        show_9590129({
+          onReward: function() {
+            earnPoints('ad');
+            alert('You got your reward!');
           }
-        } else {
-          slot.innerHTML = "<div style='color:#888;text-align:center;'>No ad code set.</div>";
-        }
-        document.getElementById('ad-modal').style.display = 'flex';
-      });
+        });
+      } else {
+        alert('Ad SDK not loaded!');
+      }
     }
+
     function closeAdModal() {
       document.getElementById('ad-modal').style.display = 'none';
       document.getElementById('monetag-ad-slot').innerHTML = '';
@@ -668,5 +652,7 @@
       }
     }
   </script>
+  <!-- Monetag SDK স্ক্রিপ্ট (body-এর একদম শেষে) -->
+  <script src='//libtl.com/sdk.js' data-zone='9590129' data-sdk='show_9590129'></script>
 </body>
 </html>
