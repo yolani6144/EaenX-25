@@ -226,6 +226,21 @@
       font-weight: bold;
       letter-spacing: 1px;
     }
+    .more-option-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px 0;
+      border-radius: 10px;
+      border: 1.5px solid #e3e8f0;
+      background: #f6f8fb;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .more-option-btn:hover {
+      background: #e0e7ff;
+    }
     .page-card {
       background: #fff;
       border-radius: 22px;
@@ -314,6 +329,13 @@
     }
     #ad-modal .close-btn {
       position:absolute;top:8px;right:12px;background:none;border:none;font-size:22px;color:#888;cursor:pointer;
+    }
+    /* More Withdraw Modal */
+    #more-withdraw-modal {
+      display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;background:#0008;justify-content:center;align-items:center;
+    }
+    #more-withdraw-modal .modal-content {
+      background:#fff;border-radius:16px;max-width:350px;width:95%;padding:22px 16px;position:relative;
     }
   </style>
 </head>
@@ -419,6 +441,10 @@
             Your balance: <span id="withdraw-balance">$0.00</span>
           </div>
           <button class="withdraw-btn" id="withdraw-btn" onclick="withdrawRequest()">REQUEST WITHDRAW</button>
+          <!-- More Option Button -->
+          <button class="more-option-btn" onclick="showMoreWithdrawOptions()">
+            <i class="fa-solid fa-ellipsis"></i> More Option
+          </button>
         </div>
         <div class="connect-card" style="margin-top:18px;">
           <div class="connect-left">
@@ -431,6 +457,24 @@
         </div>
         <div class="powered-by">
           Powered by <b>nobin</b> | &copy; 2024 EarnX
+        </div>
+      </div>
+      <!-- More Withdraw Option Modal -->
+      <div id="more-withdraw-modal">
+        <div class="modal-content">
+          <button onclick="closeMoreWithdrawModal()" style="position:absolute;top:8px;right:12px;background:none;border:none;font-size:22px;color:#888;cursor:pointer;">&times;</button>
+          <div style="font-size:18px;font-weight:700;margin-bottom:18px;text-align:center;">
+            <i class="fa-solid fa-money-bill-transfer" style="color:#4f8cff;"></i> More Withdraw Option
+          </div>
+          <div>
+            <button id="bkash-btn" onclick="showBkashForm()" style="width:100%;margin-bottom:12px;padding:12px 0;border-radius:8px;border:1.5px solid #e3e8f0;background:#f6f8fb;font-weight:600;font-size:15px;cursor:pointer;">
+              Bkash Withdraw
+            </button>
+            <button id="nagad-btn" onclick="showNagadForm()" style="width:100%;padding:12px 0;border-radius:8px;border:1.5px solid #e3e8f0;background:#f6f8fb;font-weight:600;font-size:15px;cursor:pointer;">
+              Nagad Withdraw
+            </button>
+          </div>
+          <div id="more-withdraw-form" style="margin-top:18px;"></div>
         </div>
       </div>
       <!-- Leaderboard View -->
@@ -486,7 +530,6 @@
       };
       document.getElementById('username').textContent = currentUser.name;
 
-      // শুধু user-avatar div-এ ছবি দেখাবে
       if(currentUser.username) {
         document.getElementById('profile-pic').innerHTML = `<img src="https://t.me/i/userpic/320/${currentUser.username}.jpg" style="width:54px;height:54px;border-radius:50%;object-fit:cover;display:block;" onerror="this.style.display='none';this.parentNode.textContent='${tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U'}';">`;
       } else {
@@ -663,6 +706,91 @@
       historyArr.unshift(msg);
       localStorage.setItem('historyArr', JSON.stringify(historyArr));
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
+    }
+
+    // More Withdraw Option Modal Functions
+    function showMoreWithdrawOptions() {
+      document.getElementById('more-withdraw-modal').style.display = 'flex';
+      document.getElementById('more-withdraw-form').innerHTML = '';
+      // Disable buttons if pending
+      let pending = localStorage.getItem('withdrawPending') === 'true';
+      document.getElementById('bkash-btn').disabled = pending;
+      document.getElementById('nagad-btn').disabled = pending;
+      if(pending) {
+        document.getElementById('bkash-btn').textContent = "PENDING";
+        document.getElementById('nagad-btn').textContent = "PENDING";
+      } else {
+        document.getElementById('bkash-btn').textContent = "Bkash Withdraw";
+        document.getElementById('nagad-btn').textContent = "Nagad Withdraw";
+      }
+    }
+    function closeMoreWithdrawModal() {
+      document.getElementById('more-withdraw-modal').style.display = 'none';
+      document.getElementById('more-withdraw-form').innerHTML = '';
+    }
+    function showBkashForm() {
+      let pending = localStorage.getItem('withdrawPending') === 'true';
+      document.getElementById('more-withdraw-form').innerHTML = `
+        <div style="margin-top:10px;">
+          <label style="font-weight:600;">Bkash Number:</label>
+          <input type="text" id="bkash-number" style="width:100%;margin:7px 0 12px 0;padding:10px;border-radius:7px;border:1.5px solid #e3e8f0;font-size:15px;" ${pending ? 'disabled' : ''}>
+          <label style="font-weight:600;">Amount (USD):</label>
+          <input type="number" id="bkash-amount" min="5" step="0.01" value="5" style="width:100%;margin:7px 0 12px 0;padding:10px;border-radius:7px;border:1.5px solid #e3e8f0;font-size:15px;" ${pending ? 'disabled' : ''}>
+          <button id="bkash-withdraw-btn" onclick="requestBkashWithdraw()" style="width:100%;padding:10px 0;border-radius:8px;background:linear-gradient(90deg,#fa709a 0%,#fee140 100%);font-weight:700;font-size:16px;border:none;cursor:pointer;" ${pending ? 'disabled' : ''}>Request via Bkash</button>
+        </div>
+      `;
+      if(pending) {
+        document.getElementById('bkash-withdraw-btn').textContent = "PENDING";
+      }
+    }
+    function showNagadForm() {
+      let pending = localStorage.getItem('withdrawPending') === 'true';
+      document.getElementById('more-withdraw-form').innerHTML = `
+        <div style="margin-top:10px;">
+          <label style="font-weight:600;">Nagad Number:</label>
+          <input type="text" id="nagad-number" style="width:100%;margin:7px 0 12px 0;padding:10px;border-radius:7px;border:1.5px solid #e3e8f0;font-size:15px;" ${pending ? 'disabled' : ''}>
+          <label style="font-weight:600;">Amount (USD):</label>
+          <input type="number" id="nagad-amount" min="5" step="0.01" value="5" style="width:100%;margin:7px 0 12px 0;padding:10px;border-radius:7px;border:1.5px solid #e3e8f0;font-size:15px;" ${pending ? 'disabled' : ''}>
+          <button id="nagad-withdraw-btn" onclick="requestNagadWithdraw()" style="width:100%;padding:10px 0;border-radius:8px;background:linear-gradient(90deg,#fa709a 0%,#fee140 100%);font-weight:700;font-size:16px;border:none;cursor:pointer;" ${pending ? 'disabled' : ''}>Request via Nagad</button>
+        </div>
+      `;
+      if(pending) {
+        document.getElementById('nagad-withdraw-btn').textContent = "PENDING";
+      }
+    }
+    function requestBkashWithdraw() {
+      let number = document.getElementById('bkash-number').value.trim();
+      let amount = parseFloat(document.getElementById('bkash-amount').value.trim());
+      if(!number || !amount) {
+        alert('Please enter Bkash number and amount!');
+        return;
+      }
+      if(amount < 5) {
+        alert('Minimum withdraw is $5.00');
+        return;
+      }
+      // Save pending state
+      localStorage.setItem('withdrawPending', 'true');
+      closeMoreWithdrawModal();
+      showView('withdraw-view');
+      alert('Bkash withdraw request sent!\nNumber: '+number+'\nAmount: $'+amount.toFixed(2));
+    }
+    function requestNagadWithdraw() {
+      let number = document.getElementById('nagad-number').value.trim();
+      let amount = parseFloat(document.getElementById('nagad-amount').value.trim());
+      if(!number || !amount) {
+        alert('Please enter Nagad number and amount!');
+        return;
+      }
+      if(amount < 5) {
+        alert('Minimum withdraw is $5.00');
+        return;
+      }
+      // Save pending state
+      localStorage.setItem('withdrawPending', 'true');
+      closeMoreWithdrawModal();
+      showView('withdraw-view');
+      alert('Nagad withdraw request sent!\nNumber: '+number+'\nAmount: $'+amount.toFixed(2));
     }
 
     function loadHistory() {
