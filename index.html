@@ -5,13 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>EarnX Bot - Nobin Edition</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- Telegram Mini App JS -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    /* ... তোমার আগের সব CSS অপরিবর্তিত ... */
     :root {
       --primary: #4f8cff;
       --secondary: #fff;
@@ -62,6 +59,7 @@
       background: var(--gradient); color: #fff;
       display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 26px;
       box-shadow: 0 2px 8px #4f8cff33;
+      overflow: hidden;
     }
     .user-info .username { font-size: 19px; font-weight: 700; }
     .user-info .title { font-size: 14px; color: #888; }
@@ -161,7 +159,6 @@
     .connect-btn .fa-telegram {
       font-size: 17px;
     }
-    /* Withdraw Card */
     .withdraw-card {
       background: #fff;
       border-radius: 18px;
@@ -229,7 +226,6 @@
       font-weight: bold;
       letter-spacing: 1px;
     }
-    /* Page Card for other pages */
     .page-card {
       background: #fff;
       border-radius: 22px;
@@ -310,7 +306,6 @@
       .withdraw-card { padding: 18px 6px 18px 6px; }
       .page-card { padding: 14px 4px 10px 4px;}
     }
-    /* Ad Modal */
     #ad-modal {
       display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#0008;z-index:999;justify-content:center;align-items:center;
     }
@@ -354,7 +349,6 @@
           <div class="task-details"><h3>Withdraw</h3><p>Request to withdraw your balance.</p></div>
           <div class="task-arrow"><i class="fa-solid fa-chevron-right"></i></div>
         </div>
-        <!-- Connect With Us -->
         <div class="connect-card" style="margin-top:18px;">
           <div class="connect-left">
             <i class="fa-solid fa-link"></i>
@@ -438,7 +432,6 @@
         <div class="powered-by">
           Powered by <b>nobin</b> | &copy; 2024 EarnX
         </div>
-        <div class="history-list" id="history-list"></div>
       </div>
       <!-- Leaderboard View -->
       <div id="leaderboard-view" class="view">
@@ -464,13 +457,11 @@
     </nav>
   </div>
   <script>
-    // Telegram Mini App JS
     if(window.Telegram && Telegram.WebApp) {
       Telegram.WebApp.expand();
       Telegram.WebApp.ready();
     }
 
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCB4GocXMbka1e8NSEiJnsEkKm39_t6KRE",
       authDomain: "earnx25-admin.firebaseapp.com",
@@ -482,32 +473,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ইউজার ইনফো (টেলিগ্রাম থেকে নিতে চাইলে)
     let currentUser = { id: 101, name: "Demo User" };
+    let refBy = null;
+    let ratePerPoint = 0.05;
+
     if(window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
       let tgUser = Telegram.WebApp.initDataUnsafe.user;
       currentUser = {
         id: tgUser.id,
-        name: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
+        name: tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : ''),
+        username: tgUser.username || null
       };
       document.getElementById('username').textContent = currentUser.name;
-      document.getElementById('profile-pic').textContent = tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U';
+
+      // শুধু user-avatar div-এ ছবি দেখাবে
+      if(currentUser.username) {
+        document.getElementById('profile-pic').innerHTML = `<img src="https://t.me/i/userpic/320/${currentUser.username}.jpg" style="width:54px;height:54px;border-radius:50%;object-fit:cover;display:block;" onerror="this.style.display='none';this.parentNode.textContent='${tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U'}';">`;
+      } else {
+        document.getElementById('profile-pic').textContent = tgUser.first_name ? tgUser.first_name[0].toUpperCase() : 'U';
+      }
     }
 
-    // ইউজার Firebase-এ সেভ করো (প্রথমবার এপ ওপেনেই)
-    db.ref('users/' + currentUser.id).set({
-      id: currentUser.id,
-      name: currentUser.name,
-      balance: 0,
-      status: "active"
+    db.ref('users/' + currentUser.id).once('value').then(function(snapshot) {
+      if(!snapshot.exists()) {
+        let userData = {
+          id: currentUser.id,
+          name: currentUser.name,
+          points: 0,
+          balance: 0,
+          status: "active",
+          refBy: refBy || null
+        };
+        db.ref('users/' + currentUser.id).set(userData);
+        if(refBy) {
+          db.ref('users/' + refBy + '/referrals').once('value').then(function(snap) {
+            let arr = snap.val() || [];
+            if(!arr.includes(currentUser.id)) arr.push(currentUser.id);
+            db.ref('users/' + refBy + '/referrals').set(arr);
+          });
+          db.ref('users/' + refBy).once('value').then(function(snap) {
+            let refUser = snap.val();
+            if(refUser) {
+              let newPoints = (refUser.points || 0) + 2;
+              let newBalance = newPoints * ratePerPoint;
+              db.ref('users/' + refBy).update({ points: newPoints, balance: newBalance });
+            }
+          });
+        }
+      }
     });
 
-    // রেফার লিংক (প্রত্যেক ইউজারের জন্য আলাদা)
-    let botUsername = "EarnXBot"; // তোমার বটের ইউজারনেম
+    let botUsername = "EarnXBot";
     let referLink = `https://t.me/${botUsername}?start=${currentUser.id}`;
     document.getElementById('ref-link2').textContent = referLink;
 
-    // বাকি আগের সব কোড (ব্যালেন্স, পয়েন্ট, নোটিশ, উইথড্র, ইত্যাদি)
     let notice = localStorage.getItem('notice') || "Welcome to Nobin's EarnX! 🎉";
     let connectLink = localStorage.getItem('connectLink') || "https://t.me/nobin_support";
     document.getElementById('notice-text').textContent = notice;
@@ -518,11 +537,9 @@
 
     let points = parseInt(localStorage.getItem('points') || '0');
     let balance = parseFloat(localStorage.getItem('balance') || '0');
-    const ratePerPoint = 0.05;
-    let withdrawPending = false;
+    let withdrawPending = localStorage.getItem('withdrawPending') === 'true';
 
-    // Firebase থেকে sync (ইউজার আগের পয়েন্ট/ব্যালেন্স পাবে)
-    db.ref('users/' + currentUser.id).once('value').then(function(snapshot) {
+    db.ref('users/' + currentUser.id).on('value', function(snapshot) {
       let data = snapshot.val();
       if (data) {
         points = data.points || 0;
@@ -548,6 +565,7 @@
       if(id === 'withdraw-view') btns.forEach(b=>b.classList.remove('active'));
       if(id === 'withdraw-view') document.querySelector('.nav-button.active')?.classList.remove('active');
       if(id === 'withdraw-view') {
+        withdrawPending = localStorage.getItem('withdrawPending') === 'true';
         document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
         let btn = document.getElementById('withdraw-btn');
         if(withdrawPending) {
@@ -565,6 +583,12 @@
       if(id === 'history-view') {
         loadHistory();
       }
+      if(id === 'leaderboard-view') {
+        loadLeaderboard();
+      }
+      if(id === 'referral-view') {
+        loadReferrals();
+      }
     }
 
     function earnPoints(type) {
@@ -579,7 +603,6 @@
       balance = points * ratePerPoint;
       localStorage.setItem('points', points);
       localStorage.setItem('balance', balance);
-      // Firebase-এও আপডেট করো
       db.ref('users/' + currentUser.id).update({
         points: points,
         balance: balance
@@ -596,26 +619,9 @@
           <div class="history-date">${time}</div>
         </div>
       </div>`;
-      // LocalStorage-এ সেভ করো
       let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
       historyArr.unshift(msg);
       localStorage.setItem('historyArr', JSON.stringify(historyArr));
-      // UI-তে দেখাও (যদি History tab-এ থাকো)
-      if(document.getElementById('history-list')) {
-        document.getElementById('history-list').innerHTML = historyArr.join('');
-      }
-    }
-
-    // History লোড করার ফাংশন
-    function loadHistory() {
-      let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
-      document.getElementById('history-list').innerHTML = historyArr.join('');
-    }
-
-    function copyRef() {
-      let ref = document.getElementById('ref-link2').textContent;
-      navigator.clipboard.writeText(ref);
-      alert('Referral link copied!');
     }
 
     function withdrawRequest() {
@@ -653,24 +659,85 @@
           <div class="history-date">${time}</div>
         </div>
       </div>`;
-      // LocalStorage-এ সেভ করো
       let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
       historyArr.unshift(msg);
       localStorage.setItem('historyArr', JSON.stringify(historyArr));
-      if(document.getElementById('history-list')) {
-        document.getElementById('history-list').innerHTML = historyArr.join('');
-      }
       alert('Withdraw request sent!\n\nAddress: ' + address + '\nAmount: $' + balance.toFixed(2));
     }
 
-    // Monetag Ad Show (Watch Ad modal)
+    function loadHistory() {
+      let historyArr = JSON.parse(localStorage.getItem('historyArr') || '[]');
+      document.getElementById('history-list').innerHTML = historyArr.length ? historyArr.join('') : '<div style="color:#888;font-size:14px;">No activity yet.</div>';
+    }
+
+    function loadLeaderboard() {
+      db.ref('users').orderByChild('points').limitToLast(10).once('value', function(snapshot) {
+        let arr = [];
+        snapshot.forEach(function(child) {
+          arr.push(child.val());
+        });
+        arr.reverse();
+        let html = '';
+        arr.forEach(function(user, idx) {
+          html += `
+            <div class="mini-card">
+              <div class="leaderboard-rank">${idx+1}</div>
+              <div class="leaderboard-avatar">${user.name[0]}</div>
+              <div class="leaderboard-info">
+                <div class="leaderboard-name">${user.name}</div>
+                <div class="leaderboard-score">${user.points || 0} pts</div>
+              </div>
+            </div>
+          `;
+        });
+        document.getElementById('leaderboard-list').innerHTML = html;
+      });
+    }
+
+    function loadReferrals() {
+      db.ref('users/' + currentUser.id + '/referrals').once('value').then(function(snap) {
+        let arr = snap.val() || [];
+        if(!arr || arr.length === 0) {
+          document.getElementById('referral-list').innerHTML = '<div style="color:#888;font-size:14px;">No referrals yet.</div>';
+          return;
+        }
+        let html = '';
+        let loaded = 0;
+        arr.forEach(function(refId) {
+          db.ref('users/' + refId).once('value').then(function(userSnap) {
+            let user = userSnap.val();
+            if(user) {
+              html += `
+                <div class="mini-card">
+                  <div class="referral-avatar">${user.name[0]}</div>
+                  <div class="referral-info">
+                    <div class="referral-name">${user.name}</div>
+                    <div class="referral-date">${user.id}</div>
+                  </div>
+                  <div class="referral-score">+2</div>
+                </div>
+              `;
+            }
+            loaded++;
+            if(loaded === arr.length) {
+              document.getElementById('referral-list').innerHTML = html;
+            }
+          });
+        });
+      });
+    }
+
+    function copyRef() {
+      let ref = document.getElementById('ref-link2').textContent;
+      navigator.clipboard.writeText(ref);
+      alert('Referral link copied!');
+    }
+
     function showAdModal() {
-      earnPoints('ad'); // বাটনে ক্লিক করলেই পয়েন্ট এড হবে
+      earnPoints('ad');
       if (typeof show_9590129 === "function") {
         show_9590129({
-          onReward: function() {
-            // চাইলে এখানে আর কিছু করতে পারো, না করলেও হবে
-          },
+          onReward: function() {},
           onError: function(e) {
             alert('Ad failed to load: ' + e);
           }
@@ -688,7 +755,6 @@
     document.getElementById('points-value').textContent = points;
     document.getElementById('balance-value').textContent = `$${balance.toFixed(2)}`;
     document.getElementById('withdraw-balance').textContent = `$${balance.toFixed(2)}`;
-    // App লোড হলে History ও দেখাও
     loadHistory();
     if(document.getElementById('withdraw-btn')) {
       let btn = document.getElementById('withdraw-btn');
@@ -701,7 +767,6 @@
       }
     }
   </script>
-  <!-- Monetag SDK স্ক্রিপ্ট (body-এর একদম শেষে) -->
   <script src='//libtl.com/sdk.js' data-zone='9590129' data-sdk='show_9590129'></script>
 </body>
 </html>
