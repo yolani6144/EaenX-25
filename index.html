@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EarnX Bot - Nobin Edition</title>
+  <title>EarnX 25</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -352,7 +352,7 @@
           <div class="user-avatar" id="profile-pic">U</div>
           <div class="user-info">
             <div class="username" id="username">Demo User</div>
-            <div class="title">Welcome to EarnX Bot!</div>
+            <div class="title">Welcome to EarnX 25!</div>
           </div>
         </div>
         <div class="balance-card">
@@ -381,7 +381,7 @@
           </a>
         </div>
         <div class="powered-by">
-          Powered by <b>nobin</b> | &copy; 2024 EarnX
+          Powered by <b>nobin</b> | &copy; 2024 EarnX 25
         </div>
       </div>
       <!-- Tasks View -->
@@ -456,7 +456,7 @@
           </a>
         </div>
         <div class="powered-by">
-          Powered by <b>nobin</b> | &copy; 2024 EarnX
+          Powered by <b>nobin</b> | &copy; 2024 EarnX 25
         </div>
       </div>
       <!-- More Withdraw Option Modal -->
@@ -566,9 +566,11 @@
       }
     });
 
-    let botUsername = "EarnXBot";
+    // ---- REFERRAL LINK FIX ----
+    let botUsername = "EarnX25_bot";
     let referLink = `https://t.me/${botUsername}?start=${currentUser.id}`;
     document.getElementById('ref-link2').textContent = referLink;
+    // ---------------------------
 
     let notice = localStorage.getItem('notice') || "Welcome to Nobin's EarnX! 🎉";
     let connectLink = localStorage.getItem('connectLink') || "https://t.me/nobin_support";
